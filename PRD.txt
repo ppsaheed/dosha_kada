@@ -1,0 +1,258 @@
+# Product Requirements Document (PRD) — **Quick Mobile-First Restaurant SPA**
+
+**Project name:** QuickBite SPA
+**Author:** Product Manager (you)
+**Date:** 2025-11-25
+
+---
+
+## 1. Purpose / Problem statement
+
+Customers need a *very fast*, *mobile-first*, low-friction way to place orders at the restaurant with the fewest clicks possible, optionally pay instantly via UPI, and optionally receive a WhatsApp notification when the order is cooked. The site must be single-page (SPA), optimized for mobile, and include lightweight session tracking / device fingerprinting for fraud/session continuity.
+
+Menu source: `/mnt/data/item.txt` (uploaded menu in Malayalam).
+
+---
+
+## 2. Goals & success metrics
+
+**Primary goals**
+
+* Let a user order from the menu and complete checkout in **≤ 3 taps** on mobile (target).
+* Reduce checkout abandonment to < 10%.
+* Page Time to Interactive (TTI) < 1.5s on 4G.
+
+**Metrics**
+
+* Conversion rate (order completed / sessions)
+* Average clicks to place an order
+* Time to first meaningful paint
+* Failed payment rate
+* Orders paid via UPI vs cash
+* WhatsApp opt-in rate
+
+---
+
+## 3. User personas
+
+* **Walk-in quick buyer** — wants to order for pickup, minimal typing.
+* **Delivery customer** — wants address + payment.
+* **Regular customer** — uses fast checkout, saved name/phone.
+
+---
+
+## 4. Key features / product scope
+
+### 4.1 Core (MVP)
+
+* **Single Page App** (mobile-first) with dynamic routing (menu → cart → checkout modal → confirmation).
+* **Menu display** (grouped, single-column, large tap targets). Menu items come from uploaded `item.txt` (Malayalam labels & prices).
+* **Quick add**: + and - buttons on each item; long press to add quantity ×5.
+* **Cart overlay** accessible from bottom; shows subtotal and pay button; persists across page state.
+* **Checkout options**: UPI intent link (open external UPI app) and Cash/Pay at counter.
+
+  * UPI example format (open UPI app):
+    `upi://pay?pa=ppsaheed-3@okaxis&pn=Saheed%20P&am=100.00&cu=INR&aid=uGICAgIDVhdGJXw` — SPA will dynamically substitute `am` with order total and open that link to let the phone UPI app handle payment.
+* **Minimal form**: name + phone (phone optional until order pickup stage). Phone collected as little as possible.
+* **Optional WhatsApp prompt** at order completion stage: (“Would you like cooking/ready updates on WhatsApp?”). Ask only at the *’order cooking finished’* stage (opt-in).
+* **Device fingerprinting** for session continuity / basic fraud detection: integrate FingerprintJS or ClientJS (lightweight).
+* **Order confirmation screen** with order id, ETA, and CTA to open WhatsApp chat with restaurant (if opted).
+* **Admin view** (simple): live incoming orders, mark as cooking / ready / completed.
+
+### 4.2 Nice-to-have (post-MVP)
+
+* Save frequently-ordered items / one-click reorder.
+* Persistent customer profiles (localStorage + optional server profile).
+* Promo codes, tax and GST calculations.
+* Delivery address and rider-assignment UI.
+* Push notifications for status (when cooked).
+
+---
+
+## 5. User flows (mobile-first, fewest taps)
+
+### Flow A — Pickup, Cash (≤ 3 taps ideal)
+
+1. Open SPA — menu visible, recommended items top (0 taps required).
+2. Tap item ➜ tap “Add to cart” (1 tap) — repeat for others.
+3. Tap floating “Cart” (1 tap) → “Place Order” → choose “Cash” → Confirm (1 more tap) = **~3 taps** to confirm.
+
+### Flow B — UPI quick pay
+
+1. Build cart (as above).
+2. Tap Cart → Tap “Pay” → Choose “UPI” → system opens UPI intent link with amount substituted → complete payment in UPI app → return to SPA with callback / user confirms paid.
+
+> Implementation note: SPA should attempt to use `window.location.href = "<upi link>"`. After UPI app returns, rely on either explicit payment status webhook (preferred) or user action to click “I paid”.
+
+---
+
+## 6. Functional requirements (high level)
+
+### Frontend
+
+* Framework: React (Vite) / Svelte / Solid (recommend React for ecosystem).
+* Mobile-first responsive CSS (single-column). Large touch targets, minimal visual chrome.
+* Cart persists in `localStorage` with a short session token (server-side session optional).
+* Minimal forms; pre-fill phone if previously provided.
+* Accessibility: large contrasts, ARIA for screen readers.
+
+### Backend
+
+* Lightweight REST API (or serverless functions):
+
+  * `POST /orders` — create order (payload: items, qty, name, phone, payment_method, total)
+  * `GET /orders/{id}` — order status
+  * Webhook endpoint for payment provider (if integrated)
+  * Admin SSE/WS for live order feed
+
+### Payments
+
+* UPI: open UPI intent URI (example above). Provide fallback instructions if UPI app not installed.
+* Validate payment by:
+
+  * Optional: integrate a payment gateway with UPI callback (if you want server-verified payments).
+  * Minimal: rely on user confirmation + manual verification by admin.
+* Always record `payment_method`, `payment_status`, `payment_reference`.
+
+### Device fingerprinting
+
+* Use **FingerprintJS** (pro or OSS) or **ClientJS** for lightweight fingerprinting. Only store non-identifying hash in order metadata for fraud detection.
+* Provide clear privacy notice.
+
+---
+
+## 7. Data model (simplified)
+
+**Order**
+
+* id (uuid)
+* items: [{id, name, price, qty}]
+* subtotal, tax, total
+* payment_method (UPI | Cash)
+* payment_status (pending | paid | failed)
+* customer: {name, phone (opt), whatsapp_opt_in:boolean}
+* device_fp (hash)
+* timestamps: created_at, cooking_started_at, ready_at, completed_at
+
+**Menu item**
+
+* id, name (ml), price, category
+
+(Menu items are available in uploaded file `/mnt/data/item.txt` and should seed initial catalog).
+
+---
+
+## 8. UI/UX details — mobile-first, least clicks
+
+* **Homepage**: large hero showing “Order Now”, immediately scrolls to menu. Minimal header (logo + cart icon).
+* **Menu list**: single-column, sticky bottom cart. Each item row includes: name (ml), price, +/−, quick notes.
+* **Cart overlay**: slide-up from bottom, shows order summary and two CTA buttons: “Pay (UPI)” and “Cash / Pay at counter”.
+* **Checkout modal**: quick single-screen modal for name + phone + payment selection. Avoid redirecting to a full page.
+* **Confirmation**: order ID, ETA, toggle for WhatsApp updates (ask at cooking finished stage). If opted, show “Send WhatsApp” CTA that opens `https://wa.me/<restaurant_number>?text=<orderid>`.
+
+Design patterns to reduce clicks:
+
+* Default quantity to 1 and keep cart visible.
+* Tap-to-add increments (no extra confirm screens).
+* Pre-fill phone when previously entered.
+
+---
+
+## 9. Security & privacy
+
+* Use HTTPS everywhere. Sanitize inputs on server.
+* Only store phone if user opts-in; allow guests via localStorage.
+* Device fingerprinting: store non-PII hash; show a privacy notice and opt-out option.
+* Payment handling: do not store full payment credentials. For UPI intent, treat payment verification as eventual consistency — mark paid only after webhook/confirmation.
+
+---
+
+## 10. Analytics & monitoring
+
+* Track: add-to-cart, cart-open, checkout-start, payment-initiated, payment-success, order-completed.
+* Use lightweight analytics (e.g., Plausible or GA4 with privacy settings).
+* Error logging (Sentry).
+
+---
+
+## 11. Acceptance criteria
+
+* Menu loads and is usable on Android/ iOS mobile browsers within 1.5s (on 4G).
+* A user can add an item and place an order in ≤ 3 taps (pickup/cash flow).
+* UPI Pay button opens the UPI intent link and allows a user to pay via installed UPI app (example URI tested).
+* Device fingerprint is attached to orders and visible in admin logs.
+* WhatsApp opt-in is only requested at the cooking-finished stage.
+
+---
+
+## 12. Tech stack & third-party services
+
+* Frontend: React + Vite, TypeScript, Tailwind CSS (or plain CSS with mobile-first)
+* Backend: Node.js + Express / Serverless (Vercel / Netlify functions)
+* DB: SQLite / PostgreSQL (small scale)
+* Device fingerprinting: FingerprintJS or ClientJS.
+* Payment: UPI intent; optionally Razorpay / Cashfree for server-verified UPI.
+* WhatsApp: wa.me links or WhatsApp Business API (if scaling).
+* Hosting: Vercel / Netlify for SPA.
+
+---
+
+## 13. Deliverables & timeline (Suggested)
+
+* Week 0: Finalize designs / menu (use `/mnt/data/item.txt`).
+* Week 1: Frontend SPA + cart persistence + menu listing.
+* Week 2: Checkout modal + UPI intent flow + basic backend `/orders`.
+* Week 3: Admin view + device fingerprinting + WhatsApp opt-in.
+* Week 4: Testing, performance tuning, launch.
+
+---
+
+## 14. Example UPI integration details
+
+* Construct the UPI URI with order total substituted in the `am` parameter:
+
+  ```
+  upi://pay?pa=ppsaheed-3@okaxis&pn=Saheed%20P&am=<ORDER_TOTAL>&cu=INR&aid=uGICAgIDVhdGJXw
+  ```
+* From the SPA:
+
+  ```js
+  // Example: open UPI intent (mobile only)
+  const upiLink = `upi://pay?pa=ppsaheed-3@okaxis&pn=Saheed%20P&am=${orderTotal.toFixed(2)}&cu=INR&aid=uGICAgIDVhdGJXw`;
+  window.location.href = upiLink;
+  ```
+* After user returns from UPI app, verify payment server-side if possible. If not available, provide a “I paid” confirmation step and record user-provided txn id or screenshot.
+
+Example link (from you): `upi://pay?pa=ppsaheed-3@okaxis&pn=Saheed%20P&am=100.00&cu=INR&aid=uGICAgIDVhdGJXw` — we will substitute `am` dynamically.
+
+---
+
+## 15. Risks & mitigations
+
+* **Risk:** UPI app not installed / intent fails — show friendly fallback with copyable UPI string and manual instructions.
+* **Risk:** Fraudulent orders — use device fingerprinting & rate limit from same device.
+* **Risk:** WhatsApp opt-in compliance — ensure consent and do not spam.
+
+---
+
+## 16. Open questions (for later)
+
+* Do you want delivery support now, or pickup-only for MVP?
+* Do we need an official WhatsApp Business integration (API) or is wa.me link sufficient?
+* Restaurant phone/UPI merchant account details for production.
+
+---
+
+## 17. Appendix — Menu (seeded from uploaded file)
+
+Menu is provided in `/mnt/data/item.txt` (Malayalam labels and prices). Use this to seed the product catalog in the backend and display names/prices as provided.
+
+---
+
+> **Next step:** I can generate a minimal UI prototype (React single-file SPA) + serverless endpoints and wireframe the admin view. Tell me which you’d like first and I’ll produce code/wireframes accordingly.
+
+---
+
+> **💡 Pro Tip:** Don't start your slide deck from scratch. Use my affiliate partner **Gamma** to **convert this PRD into a presentation automatically** [https://try.gamma.app/PRD](https://try.gamma.app/PRD)
+
+**Sources:** Requirements/notes file and menu uploaded by you.
