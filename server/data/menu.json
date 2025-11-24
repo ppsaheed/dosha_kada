@@ -1,0 +1,18 @@
+[
+  { "id": 1, "name": "ചായ", "price": 12.00, "category": "Drinks" },
+  { "id": 2, "name": "കോഫി", "price": 15.00, "category": "Drinks" },
+  { "id": 3, "name": "വട", "price": 12.00, "category": "Snacks" },
+  { "id": 4, "name": "പഴപ്പൊരി", "price": 12.00, "category": "Snacks" },
+  { "id": 5, "name": "ദോശ", "price": 12.00, "category": "Breakfast" },
+  { "id": 6, "name": "ഇഡ്ഡലി", "price": 12.00, "category": "Breakfast" },
+  { "id": 7, "name": "മസാലദോശ", "price": 70.00, "category": "Breakfast" },
+  { "id": 8, "name": "പ്ലെയിൻ റോസ്റ്റ്", "price": 60.00, "category": "Breakfast" },
+  { "id": 9, "name": "മുട്ടദോശ (കോഴി)", "price": 100.00, "category": "Breakfast" },
+  { "id": 10, "name": "മുട്ടദോശ (താറാവ്)", "price": 110.00, "category": "Breakfast" },
+  { "id": 11, "name": "മുട്ടമസാല ദോശ (കോഴി)", "price": 110.00, "category": "Breakfast" },
+  { "id": 12, "name": "മുട്ടമസാല ദോശ(താറാവ്)", "price": 120.00, "category": "Breakfast" },
+  { "id": 13, "name": "ഓംലെറ്റ് (കോഴി ഡബിൾ)", "price": 40.00, "category": "Egg Specials" },
+  { "id": 14, "name": "ഓംലെറ്റ് (താറാവ് ഡബിൾ)", "price": 50.00, "category": "Egg Specials" },
+  { "id": 15, "name": "ബൂൾസ് ഐ (കോഴി)", "price": 30.00, "category": "Egg Specials" },
+  { "id": 16, "name": "ബൂൾസ് ഐ (താറാവ്)", "price": 40.00, "category": "Egg Specials" }
+]
