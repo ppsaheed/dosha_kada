@@ -85,6 +85,14 @@ A mobile-first, single-page application (SPA) for quick restaurant food ordering
 
 2. **Serve the built client and run server in production mode**
 
+### Deployment
+
+The client is automatically deployed to GitHub Pages on every push to the `main` branch via GitHub Actions.
+
+- **GitHub Pages URL**: `https://ppsaheed.github.io/dosha_kada/`
+- To enable GitHub Pages: Go to repository Settings > Pages > Source: "Deploy from a branch" > Branch: `gh-pages` > Save
+- The server needs to be deployed separately (e.g., to Vercel, Heroku, or another hosting service)
+
 ## API Endpoints
 
 - `POST /orders` - Create new order
